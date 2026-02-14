@@ -37,7 +37,7 @@ function toListingsArray(val: unknown): Record<string, unknown>[] {
 }
 
 function collectAllListingCandidates(obj: Record<string, unknown>, targetCount: number): Record<string, unknown>[] {
-  const candidates: Record<string, unknown>[] = [];
+  const candidates: Record<string, unknown>[][] = [];
   const seen = new Set<unknown>();
 
   function scan(v: unknown): void {
