@@ -13,6 +13,18 @@ const tools = [
     description:
       "Bar chart of leases YTD for the past 5 years.",
   },
+  {
+    title: "Rentals Listing Status",
+    href: "/rentals-status",
+    description:
+      "Pie chart of total listings vs. active in Rentals United.",
+  },
+  {
+    title: "Rentals Ads",
+    href: "/admin/rentals-ads",
+    description:
+      "Track paid ad performance and Google Ads spend.",
+  },
 ];
 
 export default function AdminPage() {

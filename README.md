@@ -26,6 +26,8 @@ npm run dev
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+4. **Rentals KPI & Charts** (admin): Copy `env.example` to `.env.local` and set either `CONGDON_API_URL` + `CONGDON_API_KEY` or `NRBE_API_URL`. See [docs/DEPLOYMENT_ENV.md](docs/DEPLOYMENT_ENV.md) for production setup.
+
 ## Scripts
 
 - `npm run dev` - Start development server

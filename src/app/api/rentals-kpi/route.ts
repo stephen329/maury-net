@@ -264,8 +264,8 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const fromDate = searchParams.get("from_date") ?? "";
-  const toDate = searchParams.get("to_date") ?? "";
+  const fromDate = searchParams.get("from_date") ?? searchParams.get("created_date_gte") ?? "";
+  const toDate = searchParams.get("to_date") ?? searchParams.get("created_date_lte") ?? "";
   const url = new URL("/api/booking/rentals-kpi/", baseUrl);
   if (fromDate) url.searchParams.set("from_date", fromDate);
   if (toDate) url.searchParams.set("to_date", toDate);
