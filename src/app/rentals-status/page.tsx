@@ -191,10 +191,13 @@ export default function RentalsStatusPage() {
                         borderRadius: "8px",
                         color: "hsl(var(--foreground))",
                       }}
-                      formatter={(value: number, name: string, props: { payload: PieData }) => [
-                        `${value} (${props.payload.percentage}%)`,
-                        name,
-                      ]}
+                      formatter={(value: number, name: string, props) => {
+                        const pct = (props?.payload as PieData | undefined)?.percentage;
+                        return [
+                          pct != null ? `${value} (${pct}%)` : String(value),
+                          name,
+                        ];
+                      }}
                     />
                     <Legend />
                   </PieChart>
