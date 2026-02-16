@@ -94,11 +94,12 @@ export async function GET(request: Request) {
   const fromStr = fromDate.toISOString().slice(0, 10);
   const toStr = toDate.toISOString().slice(0, 10);
 
-  const authHeader = jwt
-    ? { Authorization: `JWT ${jwt}` }
-    : congdonKey
-      ? { "x-api-key": congdonKey }
-      : {};
+  const apiHeaders: HeadersInit = (() => {
+    const h: Record<string, string> = { Accept: "application/json" };
+    if (jwt) h.Authorization = `JWT ${jwt}`;
+    else if (congdonKey) h["x-api-key"] = congdonKey;
+    return h;
+  })();
 
   if (!jwt && !congdonKey) {
     return NextResponse.json(
@@ -115,7 +116,7 @@ export async function GET(request: Request) {
       leaseUrl.searchParams.set("created_date_lte", toStr);
       leaseUrl.searchParams.set("limit", "2000");
       const leaseRes = await fetch(leaseUrl.toString(), {
-        headers: { Accept: "application/json", ...(congdonKey ? { "x-api-key": congdonKey } : authHeader) },
+        headers: apiHeaders,
         cache: "no-store",
       });
       if (!leaseRes.ok) {
@@ -154,7 +155,7 @@ export async function GET(request: Request) {
       leaseUrl.searchParams.set("created_date_gte", "2020-01-01");
       leaseUrl.searchParams.set("created_date_lte", toStr);
       const leaseRes = await fetch(leaseUrl.toString(), {
-        headers: { Accept: "application/json", ...(congdonKey ? { "x-api-key": congdonKey } : authHeader) },
+        headers: apiHeaders,
         cache: "no-store",
       });
       if (!leaseRes.ok) {
@@ -198,7 +199,7 @@ export async function GET(request: Request) {
 
     while (nextUrl && pageCount < maxPages) {
       const oppRes = await fetch(nextUrl, {
-        headers: { Accept: "application/json", ...authHeader },
+        headers: apiHeaders,
         cache: "no-store",
       });
 
@@ -241,7 +242,7 @@ export async function GET(request: Request) {
     leaseUrl.searchParams.set("limit", "2000");
 
     const leaseRes = await fetch(leaseUrl.toString(), {
-      headers: { Accept: "application/json", ...(congdonKey ? { "x-api-key": congdonKey } : authHeader) },
+      headers: apiHeaders,
       cache: "no-store",
     });
 
