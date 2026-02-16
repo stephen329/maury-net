@@ -97,11 +97,16 @@ export default function RentalsAdsPage() {
       setError(null);
       try {
         const params = new URLSearchParams({ from, to });
+        params.set("debug", "1");
         const res = await fetch(`/api/rentals-ads?${params.toString()}`);
         const json = await res.json();
         if (cancelled) return;
         if (!res.ok) {
-          setError(json?.error ?? `Request failed: ${res.status}`);
+          const errMsg = json?.error ?? `Request failed: ${res.status}`;
+          const debugInfo = json?.debug
+            ? ` [Debug: loginCustomerIdSet=${json.debug.loginCustomerIdSet}, length=${json.debug.loginCustomerIdLength ?? "n/a"}]`
+            : "";
+          setError(errMsg + debugInfo);
           setData(null);
           return;
         }

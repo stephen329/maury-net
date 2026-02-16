@@ -81,6 +81,18 @@ GOOGLE_ADS_LOGIN_CUSTOMER_ID=your-manager-account-id
 |-------|-----|
 | `USER_PERMISSION_DENIED` / "manager's customer id must be set" | Add `GOOGLE_ADS_LOGIN_CUSTOMER_ID` with your **Manager** account ID (not the client ID). |
 
+### If you've set GOOGLE_ADS_LOGIN_CUSTOMER_ID but still get USER_PERMISSION_DENIED
+
+1. **Verify the env var is loaded** – The Rentals Ads page shows debug info on error: `loginCustomerIdSet=true` means the var is set; `false` means it's not loading (e.g. Vercel needs a redeploy, or the var is in the wrong environment).
+
+2. **Vercel** – After adding env vars, trigger a new deployment. Ensure the var is set for the environment you're testing (Production / Preview / Development).
+
+3. **Correct IDs** – `GOOGLE_ADS_LOGIN_CUSTOMER_ID` = Manager (MCC) account ID. `GOOGLE_ADS_CUSTOMER_ID` = the client account you're querying. Do not swap them.
+
+4. **Developer token** – When using an MCC, the developer token must be from the **Manager** account (API Center in the Manager account).
+
+5. **OAuth user** – The Google account used to generate the refresh token must have access to the Manager account. Sign in to [Google Ads](https://ads.google.com) with that account and confirm you can switch to the Manager account.
+
 ## Date Range
 
 The API returns YTD spend by default. Use query params to override:

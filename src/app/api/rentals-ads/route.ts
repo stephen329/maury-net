@@ -94,7 +94,15 @@ export async function GET(request: Request) {
         hint =
           " If your account is under a Manager (MCC), set GOOGLE_ADS_LOGIN_CUSTOMER_ID to your Manager account ID. See docs/GOOGLE_ADS_SETUP.md.";
       }
-      throw new Error(`Google Ads API error: ${err}${hint}`);
+      const debug = searchParams.get("debug") === "1" || searchParams.get("debug") === "true";
+      const errObj = new Error(`Google Ads API error: ${err}${hint}`) as Error & { debug?: object };
+      if (debug) {
+        errObj.debug = {
+          loginCustomerIdSet: !!loginCustomerId,
+          loginCustomerIdLength: loginCustomerId ? loginCustomerId.replace(/-/g, "").length : 0,
+        };
+      }
+      throw errObj;
     }
 
     const body = (await res.json()) as {
@@ -126,6 +134,7 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    const debug = err instanceof Error && "debug" in err ? (err as Error & { debug?: object }).debug : undefined;
     return NextResponse.json(
       {
         error: `Google Ads API error: ${message}`,
@@ -133,6 +142,7 @@ export async function GET(request: Request) {
         currencyCode: "USD",
         fromDate: fromStr,
         toDate: toStr,
+        ...(debug && { debug }),
       },
       { status: 502 }
     );
