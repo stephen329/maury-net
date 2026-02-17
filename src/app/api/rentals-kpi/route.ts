@@ -197,9 +197,12 @@ export async function GET(request: Request) {
   if (useCongdon) {
     const url = `${congdonUrl}/lease-activity`;
     const { searchParams } = new URL(request.url);
-    // Congdon API params: created_date_gte, created_date_lte, status (e.g. "Paid in Full")
-    const createdDateGte = searchParams.get("created_date_gte") ?? searchParams.get("from_date");
-    const createdDateLte = searchParams.get("created_date_lte") ?? searchParams.get("to_date");
+    const debugLeaseId = searchParams.get("debug_lease_id");
+    // When debugging a specific lease, use wide date range to find it
+    const createdDateGte =
+      debugLeaseId ? "2020-01-01" : (searchParams.get("created_date_gte") ?? searchParams.get("from_date"));
+    const createdDateLte =
+      debugLeaseId ? new Date().toISOString().slice(0, 10) : (searchParams.get("created_date_lte") ?? searchParams.get("to_date"));
     const status = searchParams.get("status");
     const fullUrl = new URL(url);
     if (createdDateGte) fullUrl.searchParams.set("created_date_gte", createdDateGte);
@@ -226,20 +229,41 @@ export async function GET(request: Request) {
       }
 
       const data = await res.json();
+      const rawItems = Array.isArray(data)
+        ? data
+        : (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results))
+          ? (data as { results: unknown[] }).results
+          : (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data))
+            ? (data as { data: unknown[] }).data
+            : [];
       const results = normalizeResults(data);
       const debug = searchParams.get("debug");
-      const body: { results: RentalsKpiRow[]; debug?: { keys: string[]; sample: Record<string, unknown> } } = { results };
+      const body: {
+        results: RentalsKpiRow[];
+        debug?: { keys: string[]; sample: Record<string, unknown> };
+        debug_lease?: { lease_id: string; raw: Record<string, unknown>; mapped_status: string };
+      } = { results };
       if (debug === "1" || debug === "true") {
-        const rawItems = Array.isArray(data)
-          ? data
-          : (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results))
-            ? (data as { results: unknown[] }).results
-            : (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data))
-              ? (data as { data: unknown[] }).data
-              : [];
         const first = rawItems[0];
         const sample = first && typeof first === "object" && first !== null ? (first as Record<string, unknown>) : {};
         body.debug = { keys: Object.keys(sample), sample };
+      }
+      if (debugLeaseId) {
+        const idStr = String(debugLeaseId).trim();
+        const getLeaseId = (raw: Record<string, unknown>) => {
+          const get = (a: string, b: string) => raw[a] ?? raw[b];
+          return String(get("lease_id", "leaseId") ?? get("lease_number", "leaseNumber") ?? get("id", "id") ?? "").trim();
+        };
+        const rawMatch = rawItems.find(
+          (item: unknown) =>
+            typeof item === "object" && item != null && getLeaseId(item as Record<string, unknown>) === idStr
+        ) as Record<string, unknown> | undefined;
+        const mappedRow = results.find((r) => r.lease_id === idStr);
+        body.debug_lease = {
+          lease_id: idStr,
+          raw: rawMatch ?? {},
+          mapped_status: mappedRow?.status ?? "(not found)",
+        };
       }
       return NextResponse.json(body);
     } catch (err) {

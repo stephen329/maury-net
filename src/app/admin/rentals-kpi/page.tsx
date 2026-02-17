@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowUp, Calendar, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Calendar, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const LEASE_BASE_URL = "https://cloud.congdonandcoleman.com/lease";
@@ -187,7 +187,7 @@ type StatusFilter = "all" | "signed" | "unsigned";
 
 function isSignedStatus(s: string): boolean {
   const t = s.trim().toLowerCase();
-  return ["signed", "paid in full", "paid", "complete", "completed", "executed", "active", "closed"].some((x) =>
+  return ["signed", "current", "paid in full", "paid", "complete", "completed", "executed", "active", "closed"].some((x) =>
     t.includes(x)
   );
 }
@@ -215,6 +215,7 @@ export default function RentalsKPIPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("this_month");
   const [comparisonPreset, setComparisonPreset] = useState<ComparisonPreset>("same_period_last_year");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortLeaseDir, setSortLeaseDir] = useState<"asc" | "desc" | null>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
 
@@ -293,6 +294,16 @@ export default function RentalsKPIPage() {
 
   const filteredRows = applyStatusFilter(rows, statusFilter);
   const filteredRowsLy = rowsLy ? applyStatusFilter(rowsLy, statusFilter) : [];
+
+  const sortedRows =
+    sortLeaseDir === null
+      ? filteredRows
+      : [...filteredRows].sort((a, b) => {
+          const aVal = a.lease_id ?? "";
+          const bVal = b.lease_id ?? "";
+          const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
+          return sortLeaseDir === "asc" ? cmp : -cmp;
+        });
 
   const totals = filteredRows.reduce(
     (acc, row) => ({
@@ -632,7 +643,19 @@ export default function RentalsKPIPage() {
                       Contract Date
                     </th>
                     <th className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
-                      Lease
+                      <button
+                        type="button"
+                        onClick={() => setSortLeaseDir((d) => (d === null ? "asc" : d === "asc" ? "desc" : null))}
+                        className="inline-flex items-center gap-1 hover:text-foreground/80"
+                      >
+                        Lease
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        {sortLeaseDir && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {sortLeaseDir === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </button>
                     </th>
                     <th className="px-4 py-3 font-medium text-foreground">
                       Agent Name
@@ -673,7 +696,7 @@ export default function RentalsKPIPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredRows.map((row, idx) => (
+                    sortedRows.map((row, idx) => (
                       <tr
                         key={row.booking_id}
                         className={`border-b border-border last:border-0 hover:bg-muted/40 transition-colors ${idx % 2 === 1 ? "bg-muted/20" : ""}`}
