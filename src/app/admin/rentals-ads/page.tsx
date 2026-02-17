@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 type AdsData = {
   totalSpend: number;
@@ -173,34 +172,31 @@ export default function RentalsAdsPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/admin">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Admin
-          </Button>
+        <Link
+          href="/admin"
+          className="inline-flex items-center gap-2 text-sm text-[var(--odin-carolina-blue)] hover:underline"
+        >
+          <ArrowLeft className="size-4" />
+          Back to Admin
         </Link>
       </div>
 
-      <h1 className="text-2xl font-semibold text-foreground mb-2">
+      <h1 className="text-xl md:text-[28px] font-bold tracking-[1.68px] text-[var(--odin-navy)] mb-2">
         Rentals Ad Performance
       </h1>
-      <p className="text-muted-foreground mb-4">
+      <p className="text-[var(--odin-black-60)] text-sm mb-4">
         Track paid advertising spend and performance for rental listings.
       </p>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <label htmlFor="date-preset" className="text-sm font-medium text-foreground">
+        <label htmlFor="date-preset" className="text-sm font-medium text-[var(--odin-navy)]">
           Date range
         </label>
         <select
           id="date-preset"
           value={datePreset}
           onChange={(e) => setDatePreset(e.target.value as DatePreset)}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className="rounded-none border border-[var(--odin-roman-silver)] bg-white px-3 py-2 text-sm text-[var(--odin-navy)] focus:outline-none focus:ring-2 focus:ring-[var(--odin-carolina-blue)] focus:border-[var(--odin-carolina-blue)]"
         >
           <option value="this_month">{DATE_PRESET_LABELS.this_month}</option>
           <option value="last_month">{DATE_PRESET_LABELS.last_month}</option>
@@ -210,58 +206,58 @@ export default function RentalsAdsPage() {
           const { from, to } = getDateRangeForPreset(datePreset);
           const label = formatDateRangeLabel(from, to);
           return label ? (
-            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="text-sm text-[var(--odin-black-60)]">{label}</span>
           ) : null;
         })()}
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-foreground">
+        <div className="mb-6 rounded-none border border-[var(--color-destructive)] bg-red-50 p-4 text-sm text-[var(--odin-navy)]">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12 gap-2 text-muted-foreground">
+        <div className="flex justify-center py-12 gap-2 text-[var(--odin-roman-silver)]">
           <Loader2 className="size-5 animate-spin" />
           <span>Loading…</span>
         </div>
       ) : null}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             Costs
           </p>
-          <p className="text-xl font-semibold text-foreground">
+          <p className="text-lg font-bold text-[var(--odin-navy)]">
             {loading ? "…" : data ? formatCurrency(data.totalSpend, data.currencyCode) : "—"}
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             Clicks
           </p>
-          <p className="text-xl font-semibold text-foreground">—</p>
+          <p className="text-lg font-bold text-[var(--odin-navy)]">—</p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             Leads
           </p>
-          <p className="text-xl font-semibold text-foreground">
+          <p className="text-lg font-bold text-[var(--odin-navy)]">
             {ppcLeadsLoading ? "…" : ppcLeads.length}
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             Conversion Rate
           </p>
-          <p className="text-xl font-semibold text-foreground">—</p>
+          <p className="text-lg font-bold text-[var(--odin-navy)]">—</p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             Revenue
           </p>
-          <p className="text-xl font-semibold text-foreground">
+          <p className="text-lg font-bold text-[var(--odin-navy)]">
             {ppcLeadsLoading
               ? "…"
               : formatCurrency(
@@ -270,11 +266,11 @@ export default function RentalsAdsPage() {
                 )}
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+        <div className="rounded-[10px] bg-white p-4 shadow-[var(--odin-shadow-card)]">
+          <p className="text-[10px] md:text-xs font-normal text-[var(--odin-black-60)] mb-1">
             ROAS
           </p>
-          <p className="text-xl font-semibold text-foreground">
+          <p className="text-lg font-bold text-[var(--odin-navy)]">
             {ppcLeadsLoading || loading
               ? "…"
               : data && data.totalSpend > 0
@@ -285,25 +281,25 @@ export default function RentalsAdsPage() {
       </div>
 
       <div className="mt-10">
-        <h2 className="text-lg font-medium text-foreground mb-4">
+        <h2 className="text-base md:text-[23px] font-bold tracking-[1.68px] text-[var(--odin-navy)] mb-2">
           PPC Leads
         </h2>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-xs text-[var(--odin-black-60)] mb-4">
           Rental opportunities from book.nantucketrentals.com
         </p>
         {ppcLeadsError && (
-          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-foreground">
+          <div className="mb-4 rounded-none border border-red-500 bg-red-50 p-4 text-sm text-[var(--odin-navy)]">
             {ppcLeadsError}
           </div>
         )}
         {ppcLeadsLoading ? (
-          <div className="flex justify-center py-12 gap-2 text-muted-foreground">
+          <div className="flex justify-center py-12 gap-2 text-[var(--odin-roman-silver)]">
             <Loader2 className="size-5 animate-spin" />
             <span>Loading…</span>
           </div>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <table className="w-full text-sm table-fixed">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[10px] md:text-xs table-fixed text-left">
               <colgroup>
                 <col style={{ width: "15%" }} />
                 <col style={{ width: "25%" }} />
@@ -312,20 +308,20 @@ export default function RentalsAdsPage() {
                 <col style={{ width: "12.5%" }} />
                 <col style={{ width: "12.5%" }} />
               </colgroup>
-              <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left font-medium px-4 py-3">Date</th>
-                  <th className="text-left font-medium px-4 py-3">Email</th>
-                  <th className="text-left font-medium px-4 py-3">Agent</th>
-                  <th className="text-left font-medium px-4 py-3">Call Requested?</th>
-                  <th className="text-left font-medium px-4 py-3">Lease Status</th>
-                  <th className="text-right font-medium px-4 py-3">Revenue</th>
+              <thead className="bg-slate-50 border-t">
+                <tr>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3">Date</th>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3">Email</th>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3">Agent</th>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3">Call Requested?</th>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3">Lease Status</th>
+                  <th className="text-[var(--odin-black-60)] font-normal px-4 py-3 text-right">Revenue</th>
                 </tr>
               </thead>
               <tbody>
                 {ppcLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-8 text-center text-[var(--odin-roman-silver)]">
                       No PPC leads in this date range
                     </td>
                   </tr>
@@ -344,28 +340,28 @@ export default function RentalsAdsPage() {
                               setExpandedRowIndex(isExpanded ? null : i);
                             }
                           }}
-                          className={`border-b border-border last:border-b-0 cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/20" : ""}`}
+                          className={`border-b border-slate-200 last:border-b-0 cursor-pointer hover:bg-slate-50 ${isExpanded ? "bg-slate-50" : "bg-white"}`}
                         >
-                          <td className="px-4 py-3">{formatDateDisplay(row.date)}</td>
-                          <td className="px-4 py-3 min-w-0 truncate" title={row.email}>
+                          <td className="px-4 py-3 text-[var(--odin-navy)]">{formatDateDisplay(row.date)}</td>
+                          <td className="px-4 py-3 min-w-0 truncate text-[var(--odin-navy)]" title={row.email}>
                             {row.email}
                           </td>
-                          <td className="px-4 py-3 min-w-0 truncate" title={row.agent}>
+                          <td className="px-4 py-3 min-w-0 truncate text-[var(--odin-navy)]" title={row.agent}>
                             {row.agent}
                           </td>
                           <td className="px-4 py-3">
                             {row.callRequested ? (
-                              <span className="text-foreground font-medium">Yes</span>
+                              <span className="text-[var(--odin-navy)] font-bold">Yes</span>
                             ) : (
-                              <span className="text-muted-foreground">No</span>
+                              <span className="text-[var(--odin-black-60)]">No</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <span
                               className={
                                 row.leaseStatus === "Booked"
-                                  ? "text-green-700 font-medium"
-                                  : "text-muted-foreground"
+                                  ? "font-bold text-[var(--odin-success)]"
+                                  : "text-[var(--odin-black-60)]"
                               }
                             >
                               {row.leaseStatus}
@@ -376,7 +372,7 @@ export default function RentalsAdsPage() {
                                     href={`https://cloud.congdonandcoleman.com/lease/${row.leaseId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-primary underline hover:no-underline"
+                                    className="text-[var(--odin-carolina-blue)] underline hover:no-underline"
                                     title="Open lease"
                                   >
                                     #{row.leaseId}
@@ -385,44 +381,44 @@ export default function RentalsAdsPage() {
                               )}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium">
+                          <td className="px-4 py-3 text-right font-bold text-[var(--odin-navy)]">
                             {row.revenue > 0
                               ? formatCurrency(row.revenue, "USD")
                               : "—"}
-                            <span className="ml-2 text-muted-foreground">
+                            <span className="ml-2 text-[var(--odin-black-60)] font-normal">
                               {isExpanded ? "▼" : "▶"}
                             </span>
                           </td>
                         </tr>
                         {isExpanded && (
-                          <tr className="border-b border-border bg-muted/10">
+                          <tr className="border-b border-slate-200 bg-slate-50/80">
                             <td className="w-32 px-4 py-2 align-top" />
-                            <td className="px-4 py-2 align-top text-sm">
+                            <td className="px-4 py-2 align-top text-xs">
                               <div className="space-y-1">
                                 <div>
-                                  <span className="font-medium text-muted-foreground">
+                                  <span className="font-normal text-[var(--odin-black-60)]">
                                     Adults:{" "}
                                   </span>
-                                  <span className="text-foreground">
+                                  <span className="text-[var(--odin-navy)]">
                                     {row.adults != null ? String(row.adults) : "—"}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="font-medium text-muted-foreground">
+                                  <span className="font-normal text-[var(--odin-black-60)]">
                                     Children:{" "}
                                   </span>
-                                  <span className="text-foreground">
+                                  <span className="text-[var(--odin-navy)]">
                                     {row.children != null ? String(row.children) : "—"}
                                   </span>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-2 align-top text-sm" colSpan={4}>
+                            <td className="px-4 py-2 align-top text-xs" colSpan={4}>
                               <div>
-                                <span className="font-medium text-muted-foreground">
+                                <span className="font-normal text-[var(--odin-black-60)]">
                                   Comment:{" "}
                                 </span>
-                                <span className="text-foreground">
+                                <span className="text-[var(--odin-navy)]">
                                   {row.comment != null && row.comment !== ""
                                     ? row.comment
                                     : "—"}
