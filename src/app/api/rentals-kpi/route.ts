@@ -192,12 +192,21 @@ function normalizeResults(data: unknown): RentalsKpiRow[] {
 export async function GET(request: Request) {
   const congdonUrl = process.env.CONGDON_API_URL?.replace(/\/$/, "");
   const congdonKey = process.env.CONGDON_API_KEY;
-  const useCongdon = Boolean(congdonUrl && congdonKey);
+  const jwt = process.env.CONGDON_COLEMAN_JWT;
+  const baseUrl = process.env.NRBE_API_URL;
 
-  if (useCongdon) {
+  const { searchParams } = new URL(request.url);
+  const debugLeaseId = searchParams.get("debug_lease_id");
+
+  // Try Congdon when URL is set, with whatever auth is available (JWT > API key > none)
+  if (congdonUrl) {
+    const apiHeaders: HeadersInit = (() => {
+      const h: Record<string, string> = { Accept: "application/json" };
+      if (jwt) h.Authorization = `JWT ${jwt}`;
+      else if (congdonKey) h["x-api-key"] = congdonKey;
+      return h;
+    })();
     const url = `${congdonUrl}/lease-activity`;
-    const { searchParams } = new URL(request.url);
-    const debugLeaseId = searchParams.get("debug_lease_id");
     // When debugging a specific lease, use wide date range to find it
     const createdDateGte =
       debugLeaseId ? "2020-01-01" : (searchParams.get("created_date_gte") ?? searchParams.get("from_date"));
@@ -208,86 +217,72 @@ export async function GET(request: Request) {
     if (createdDateGte) fullUrl.searchParams.set("created_date_gte", createdDateGte);
     if (createdDateLte) fullUrl.searchParams.set("created_date_lte", createdDateLte);
     if (status) fullUrl.searchParams.set("status", status);
-    // Many APIs default to 30 results; request higher limit so counts are accurate for the period
     fullUrl.searchParams.set("limit", "2000");
 
     try {
       const res = await fetch(fullUrl.toString(), {
-        headers: {
-          Accept: "application/json",
-          "x-api-key": congdonKey!,
-        },
+        headers: apiHeaders,
         cache: "no-store",
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        return NextResponse.json(
-          { error: `Congdon lease-activity returned ${res.status}: ${text}`, results: [] },
-          { status: 502 }
-        );
+      if (res.ok) {
+        const data = await res.json();
+        const rawItems = Array.isArray(data)
+          ? data
+          : (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results))
+            ? (data as { results: unknown[] }).results
+            : (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data))
+              ? (data as { data: unknown[] }).data
+              : [];
+        const results = normalizeResults(data);
+        const debug = searchParams.get("debug");
+        const body: {
+          results: RentalsKpiRow[];
+          debug?: { keys: string[]; sample: Record<string, unknown> };
+          debug_lease?: { lease_id: string; raw: Record<string, unknown>; mapped_status: string };
+        } = { results };
+        if (debug === "1" || debug === "true") {
+          const first = rawItems[0];
+          const sample = first && typeof first === "object" && first !== null ? (first as Record<string, unknown>) : {};
+          body.debug = { keys: Object.keys(sample), sample };
+        }
+        if (debugLeaseId) {
+          const idStr = String(debugLeaseId).trim();
+          const getLeaseId = (raw: Record<string, unknown>) => {
+            const get = (a: string, b: string) => raw[a] ?? raw[b];
+            return String(get("lease_id", "leaseId") ?? get("lease_number", "leaseNumber") ?? get("id", "id") ?? "").trim();
+          };
+          const rawMatch = rawItems.find(
+            (item: unknown) =>
+              typeof item === "object" && item != null && getLeaseId(item as Record<string, unknown>) === idStr
+          ) as Record<string, unknown> | undefined;
+          const mappedRow = results.find((r) => r.lease_id === idStr);
+          body.debug_lease = {
+            lease_id: idStr,
+            raw: rawMatch ?? {},
+            mapped_status: mappedRow?.status ?? "(not found)",
+          };
+        }
+        return NextResponse.json(body);
       }
-
-      const data = await res.json();
-      const rawItems = Array.isArray(data)
-        ? data
-        : (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results))
-          ? (data as { results: unknown[] }).results
-          : (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data))
-            ? (data as { data: unknown[] }).data
-            : [];
-      const results = normalizeResults(data);
-      const debug = searchParams.get("debug");
-      const body: {
-        results: RentalsKpiRow[];
-        debug?: { keys: string[]; sample: Record<string, unknown> };
-        debug_lease?: { lease_id: string; raw: Record<string, unknown>; mapped_status: string };
-      } = { results };
-      if (debug === "1" || debug === "true") {
-        const first = rawItems[0];
-        const sample = first && typeof first === "object" && first !== null ? (first as Record<string, unknown>) : {};
-        body.debug = { keys: Object.keys(sample), sample };
-      }
-      if (debugLeaseId) {
-        const idStr = String(debugLeaseId).trim();
-        const getLeaseId = (raw: Record<string, unknown>) => {
-          const get = (a: string, b: string) => raw[a] ?? raw[b];
-          return String(get("lease_id", "leaseId") ?? get("lease_number", "leaseNumber") ?? get("id", "id") ?? "").trim();
-        };
-        const rawMatch = rawItems.find(
-          (item: unknown) =>
-            typeof item === "object" && item != null && getLeaseId(item as Record<string, unknown>) === idStr
-        ) as Record<string, unknown> | undefined;
-        const mappedRow = results.find((r) => r.lease_id === idStr);
-        body.debug_lease = {
-          lease_id: idStr,
-          raw: rawMatch ?? {},
-          mapped_status: mappedRow?.status ?? "(not found)",
-        };
-      }
-      return NextResponse.json(body);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      return NextResponse.json(
-        { error: `Failed to fetch Congdon lease-activity: ${message}`, results: [] },
-        { status: 502 }
-      );
+      // Congdon returned non-2xx (e.g. 401 without JWT); fall through to NRBE
+    } catch {
+      // Congdon fetch failed; fall through to NRBE
     }
   }
 
-  const baseUrl = process.env.NRBE_API_URL;
   if (!baseUrl) {
     return NextResponse.json(
       {
-        error:
-          "Neither Congdon (CONGDON_API_URL + CONGDON_API_KEY) nor NRBE (NRBE_API_URL) is set. See .env.example.",
+        error: congdonUrl
+          ? "Congdon lease-activity unavailable (may require JWT). Set NRBE_API_URL as fallback, or CONGDON_COLEMAN_JWT."
+          : "Neither Congdon (CONGDON_API_URL) nor NRBE (NRBE_API_URL) is set. See .env.example.",
         results: [],
       },
       { status: 503 }
     );
   }
 
-  const { searchParams } = new URL(request.url);
   const fromDate = searchParams.get("from_date") ?? searchParams.get("created_date_gte") ?? "";
   const toDate = searchParams.get("to_date") ?? searchParams.get("created_date_lte") ?? "";
   const url = new URL("/api/booking/rentals-kpi/", baseUrl);
