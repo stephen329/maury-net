@@ -74,7 +74,7 @@ function getLeaseId(raw: Record<string, unknown>): string {
 export async function GET(request: Request) {
   const congdonUrl = process.env.CONGDON_API_URL?.replace(/\/$/, "");
   const congdonKey = process.env.CONGDON_API_KEY;
-  const jwt = process.env.CONGDON_COLEMAN_JWT;
+  const jwt = process.env.CONGDON_COLEMAN_JWT?.trim();
 
   if (!congdonUrl) {
     return NextResponse.json(
@@ -207,7 +207,7 @@ export async function GET(request: Request) {
         const text = await oppRes.text();
         let errorMsg = `Rental opportunity API: ${oppRes.status} ${text.slice(0, 200)}`;
         if (oppRes.status === 401) {
-          errorMsg += ` Rental-opportunity requires JWT. Set CONGDON_COLEMAN_JWT. Obtain via: curl -X POST ${congdonUrl}/user-auth -H "Content-Type: application/json" -d '{"email":"YOUR_EMAIL","password":"YOUR_PASSWORD","user_type":"pm"}'`;
+          errorMsg += ` Rental-opportunity requires JWT. Set CONGDON_COLEMAN_JWT to the token from: curl -X POST ${congdonUrl}/user-auth -H "Content-Type: application/json" -d '{"email":"YOUR_EMAIL","password":"YOUR_PASSWORD","user_type":"pm"}' (use same host as CONGDON_API_URL).`;
         }
         return NextResponse.json({ error: errorMsg, rows: [] }, { status: 502 });
       }

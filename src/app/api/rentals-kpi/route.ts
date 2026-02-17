@@ -192,7 +192,7 @@ function normalizeResults(data: unknown): RentalsKpiRow[] {
 export async function GET(request: Request) {
   const congdonUrl = process.env.CONGDON_API_URL?.replace(/\/$/, "");
   const congdonKey = process.env.CONGDON_API_KEY;
-  const jwt = process.env.CONGDON_COLEMAN_JWT;
+  const jwt = process.env.CONGDON_COLEMAN_JWT?.trim();
   const baseUrl = process.env.NRBE_API_URL;
 
   const { searchParams } = new URL(request.url);
