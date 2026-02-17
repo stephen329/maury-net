@@ -13,6 +13,14 @@ Set these in your project's **Environment Variables**:
 
 The app will call `{CONGDON_API_URL}/lease-activity` with date filters.
 
+**Lead submission (get-in-touch):** Optional. To override the default backend URL for submitting leads (e.g. contact/PPC forms), set:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CONGDON_GET_IN_TOUCH_URL` | Backend get-in-touch endpoint (no auth) | `https://devapi.congdonandcoleman.com/get-in-touch` |
+
+See [GET_IN_TOUCH_API.md](./GET_IN_TOUCH_API.md) for the preferred payload format.
+
 ## Option B: NRBE Backend
 
 If you use the nrbe Django backend instead:
