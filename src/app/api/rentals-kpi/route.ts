@@ -25,6 +25,10 @@ function str(val: unknown): string {
   return String(val);
 }
 
+function hasValue(val: unknown): boolean {
+  return val != null && !(typeof val === "string" && val.trim() === "");
+}
+
 /** Return only the first name (first word) from a full name string. */
 function firstNameOnly(full: string): string {
   const word = full.trim().split(/\s+/)[0];
@@ -145,48 +149,67 @@ function mapToKpiRow(raw: Record<string, unknown>, index: number): RentalsKpiRow
     get("effective_date", "effectiveDate") ??
     get("created_at", "createdAt") ??
     get("created", "created");
+  const bookingId = num(get("booking_id", "bookingId")) || index + 1;
   // Lease # for link to cloud.congdonandcoleman.com/leases/[id]
   const leaseId =
     str(get("lease_id", "leaseId")) ||
     str(get("lease_number", "leaseNumber")) ||
     str(get("id", "id")) ||
-    (num(get("booking_id", "bookingId")) || index + 1).toString();
+    bookingId.toString();
   const agentCommission = num(get("agent_commission", "agentCommission"));
   const officeCommission = num(get("office_commission", "officeCommission"));
+  const totalCommissionRaw = get("total_commission", "totalCommission");
   const processingFee = num(get("processing_fee", "processingFee"));
   const nrBookingFee = num(get("nr_booking_fee", "nrBookingFee"));
-  const bookingFee = processingFee + nrBookingFee;
-  const totalRevenue = officeCommission + bookingFee;
+  const bookingFeeRaw = get("booking_fee", "bookingFee");
+  const totalRevenueRaw = get("total_revenue", "totalRevenue");
+  const grossRentRaw = get("gross_rent", "grossRent");
+
+  const totalCommission = hasValue(totalCommissionRaw)
+    ? num(totalCommissionRaw)
+    : agentCommission + officeCommission;
+  const bookingFee = hasValue(bookingFeeRaw)
+    ? num(bookingFeeRaw)
+    : processingFee + nrBookingFee;
+  const totalRevenue = hasValue(totalRevenueRaw)
+    ? num(totalRevenueRaw)
+    : officeCommission + bookingFee;
+
+  const agentName =
+    str(get("agent_name", "agentName")).trim() || resolveAgentName(raw);
+  const address = str(get("address", "address")).trim() || resolvePropertyAddress(raw);
+  const status = str(get("status", "status")).trim() || rawStatus(raw);
+
   return {
-    booking_id: num(get("booking_id", "bookingId")) || index + 1,
+    booking_id: bookingId,
     lease_id: leaseId,
     contract_data: str(contractDate),
-    agent_name: resolveAgentName(raw),
-    address: resolvePropertyAddress(raw),
-    status: rawStatus(raw),
-    gross_rent: num(get("gross_rent", "grossRent") || get("rent", "rent")),
-    total_commission: agentCommission + officeCommission,
+    agent_name: agentName,
+    address,
+    status,
+    gross_rent: hasValue(grossRentRaw) ? num(grossRentRaw) : num(get("rent", "rent")),
+    total_commission: totalCommission,
     office_commission: officeCommission,
     booking_fee: bookingFee,
     total_revenue: totalRevenue,
   };
 }
 
-function normalizeResults(data: unknown): RentalsKpiRow[] {
-  if (Array.isArray(data)) {
-    return data.map((item, i) => mapToKpiRow(typeof item === "object" && item != null ? (item as Record<string, unknown>) : {}, i));
-  }
-  if (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results)) {
-    return (data as { results: unknown[] }).results.map((item, i) =>
-      mapToKpiRow(typeof item === "object" && item != null ? (item as Record<string, unknown>) : {}, i)
-    );
-  }
-  if (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data)) {
-    return (data as { data: unknown[] }).data.map((item, i) =>
-      mapToKpiRow(typeof item === "object" && item != null ? (item as Record<string, unknown>) : {}, i)
-    );
+function extractRawItems(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (!data || typeof data !== "object") return [];
+  const obj = data as Record<string, unknown>;
+  for (const key of ["results", "data", "rows", "items", "records", "list"]) {
+    const val = obj[key];
+    if (Array.isArray(val)) return val;
   }
   return [];
+}
+
+function normalizeResults(data: unknown): RentalsKpiRow[] {
+  return extractRawItems(data).map((item, i) =>
+    mapToKpiRow(typeof item === "object" && item != null ? (item as Record<string, unknown>) : {}, i)
+  );
 }
 
 export async function GET(request: Request) {
@@ -227,13 +250,7 @@ export async function GET(request: Request) {
 
       if (res.ok) {
         const data = await res.json();
-        const rawItems = Array.isArray(data)
-          ? data
-          : (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown[] }).results))
-            ? (data as { results: unknown[] }).results
-            : (data && typeof data === "object" && "data" in data && Array.isArray((data as { data: unknown[] }).data))
-              ? (data as { data: unknown[] }).data
-              : [];
+        const rawItems = extractRawItems(data);
         const results = normalizeResults(data);
         const debug = searchParams.get("debug");
         const body: {
@@ -304,7 +321,19 @@ export async function GET(request: Request) {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    const rawItems = extractRawItems(data);
+    const results = normalizeResults(data);
+    const debug = searchParams.get("debug");
+    const body: {
+      results: RentalsKpiRow[];
+      debug?: { keys: string[]; sample: Record<string, unknown> };
+    } = { results };
+    if (debug === "1" || debug === "true") {
+      const first = rawItems[0];
+      const sample = first && typeof first === "object" && first !== null ? (first as Record<string, unknown>) : {};
+      body.debug = { keys: Object.keys(sample), sample };
+    }
+    return NextResponse.json(body);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
